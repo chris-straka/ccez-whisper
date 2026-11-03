@@ -1,11 +1,4 @@
 <resources>
     <string name="app_name">ccez-whisper</string>
     <color name="ic_launcher_background">#37474F</color>
-    <!-- SHA-256 of the signing certificates allowed to listen. -->
-    <string-array name="listeners">
-        <!-- ccez-tube -->
-        <item>ab1fc83b71bc0740ca41d31f65e35675ee38ff9550b45e8c2ecd1b423e229d57</item>
-        <!-- ccez-llm (studio.ccez.app) -->
-        <item>77c11e1b14dfaf3990e7e13af29cba12aa272a5b67beb1f2cb6aa5a17bf29910</item>
-    </string-array>
 </resources>

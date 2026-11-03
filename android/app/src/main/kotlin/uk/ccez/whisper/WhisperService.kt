@@ -10,8 +10,8 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 /**
- * Whisper for the owner's other apps (only those signed with a key in
- * res/values `listeners`). The model is loaded on the first request and
+ * Whisper for any app on the phone (owner, 2026-11-02: any app may use
+ * it). The model is loaded on the first request and
  * let go two minutes after the last, so it holds no memory between uses.
  */
 class WhisperService : Service() {
