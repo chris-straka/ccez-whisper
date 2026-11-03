@@ -5,7 +5,9 @@
 #include <jni.h>
 #include <android/log.h>
 #include <string>
+#include <cctype>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "whisper.h"
@@ -36,6 +38,36 @@ std::string escape(const char *s) {
     return out;
 }
 
+// Punctuation and brackets, whose DTW times stray (a 「 placed 8 s
+// before its words).
+bool mark(const char *t) {
+    static const char *marks[] = {"「", "」", "『", "』", "、", "。", "？", "！", "，", "…", "（", "）"};
+    std::string s = t;
+    s.erase(0, s.find_first_not_of(' '));
+    if (s.empty()) return true;
+    if (s.size() == 1) return !isalnum(static_cast<unsigned char>(s[0]));
+    for (const char *m : marks) if (s == m) return true;
+    return false;
+}
+
+// A segment's times from its words' DTW times (in 10 ms steps), else
+// Whisper's own.
+std::pair<int64_t, int64_t> said(whisper_context *ctx, int i) {
+    const int64_t t0 = whisper_full_get_segment_t0(ctx, i);
+    int64_t first = -1, last = -1;
+    const int n = whisper_full_n_tokens(ctx, i);
+    for (int k = 0; k < n; ++k) {
+        whisper_token_data d = whisper_full_get_token_data(ctx, i, k);
+        if (d.id >= whisper_token_eot(ctx) || d.t_dtw < 0 || d.t_dtw < t0 - 100) continue;
+        if (mark(whisper_full_get_token_text(ctx, i, k))) continue;
+        if (first < 0) first = d.t_dtw;
+        last = d.t_dtw;
+    }
+    if (first < 0) return {t0, whisper_full_get_segment_t1(ctx, i)};
+    // A word's DTW time is about when it starts: give the last one 0.3 s.
+    return {first, last + 30};
+}
+
 // The big cores: the S24 has one X4 and five A720s worth using; past
 // six threads the little cores slow it down (measured: 6 beat 4 and 8).
 int threads() {
@@ -50,6 +82,13 @@ Java_uk_ccez_whisper_Native_load(JNIEnv *env, jclass, jstring path) {
     const char *p = env->GetStringUTFChars(path, nullptr);
     whisper_context_params cp = whisper_context_default_params();
     cp.use_gpu = false;
+    // Word times by DTW on the turbo model's alignment heads: Whisper's
+    // own segment times come in whole seconds and run up to 3 s early;
+    // these land within 0.2 s of the speech (Easy Japanese, measured
+    // against YouTube's word times). DTW needs flash attention off.
+    cp.flash_attn = false;
+    cp.dtw_token_timestamps = true;
+    cp.dtw_aheads_preset = WHISPER_AHEADS_LARGE_V3_TURBO;
     whisper_context *ctx = whisper_init_from_file_with_params(p, cp);
     env->ReleaseStringUTFChars(path, p);
     return reinterpret_cast<jlong>(ctx);
@@ -94,8 +133,9 @@ Java_uk_ccez_whisper_Native_hear(JNIEnv *env, jclass, jlong handle, jfloatArray 
     for (int i = 0; i < segs; ++i) {
         if (i) out += ",";
         // Whisper's times are in 10 ms steps.
-        out += "{\"t0\":" + std::to_string(whisper_full_get_segment_t0(ctx, i) * 10);
-        out += ",\"t1\":" + std::to_string(whisper_full_get_segment_t1(ctx, i) * 10);
+        const auto [t0, t1] = said(ctx, i);
+        out += "{\"t0\":" + std::to_string(t0 * 10);
+        out += ",\"t1\":" + std::to_string(t1 * 10);
         out += ",\"text\":\"" + escape(whisper_full_get_segment_text(ctx, i)) + "\"}";
     }
     out += "]}";
