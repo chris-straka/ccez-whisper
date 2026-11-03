@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Only the owner's apps may listen: ccez-tube's and ccez-llm's keys. -->
+    <permission
+        android:name="uk.ccez.whisper.permission.HEAR"
+        android:protectionLevel="signature|knownSigner"
+        android:knownCerts="@array/listeners" />
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:theme="@android:style/Theme.Material.NoActionBar">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <service
+            android:name=".WhisperService"
+            android:exported="true"
+            android:permission="uk.ccez.whisper.permission.HEAR">
+            <intent-filter>
+                <action android:name="uk.ccez.whisper.HEAR" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>
