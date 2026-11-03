@@ -9,6 +9,11 @@ subtitles, line checks and speaking practice, and later ccez-llm.
   `uk.ccez.whisper.HEAR`) and call `IWhisper.hear` with 16 kHz mono
   16-bit sound (`android/app/src/main/aidl`). Any app on the phone may
   (owner, 2026-11-02).
+- The answer is JSON, `{"lang","segments":[{"t0","t1","text"}]}`, times
+  in ms. They come from word times (DTW on the turbo model's alignment
+  heads): Whisper's own segment times are whole seconds and ran up to
+  3 s early; these landed within 0.2 s of YouTube's word times on an
+  Easy Japanese episode, at the same speed.
 - whisper.cpp is a submodule (`third_party/whisper.cpp`), on the CPU: on
   the S24 a minute of speech takes about 35 s (8-bit, greedy, 6 threads).
   The GPU doesn't help (tried 2026-11-02, whisper.cpp 482279b):
