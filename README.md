@@ -22,3 +22,7 @@ subtitles, line checks and speaking practice, and later ccez-llm.
   - The real speed-up would be the Hexagon NPU (Qualcomm's QNN builds of
     Whisper), a different stack.
 - Release: `fleet run --on y8 --snapshot -- scripts/release.sh` (ccez-tube's key).
+
+## Licence
+
+MIT (LICENSE). whisper.cpp and the model are MIT too.
